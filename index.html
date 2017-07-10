@@ -1,0 +1,263 @@
+<html>
+<META HTTP-EQUIV="content-type" CONTENT="text/html; charset=utf-8">
+<link rel="stylesheet" href="style.css" type="text/css">
+<head>
+	<title>
+		Kompositionshilfe
+	</title>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+	<script type="text/javascript">
+	var Noten = new Array("c","c#","d","d#","e","f","f#","g","g#","a","a#","h");
+	var Schritte = new Array(2,2,1,2,2,2,1);
+	var NotenMuster = new Array();
+	var AlleTonleitern = new Array();
+
+	var AkkordMuster = new Array();
+	AkkordMuster[0] = new Array(0,4,7); // DUR
+	AkkordMuster[1] = new Array(0,3,7); // MOLL
+	AkkordMuster[2] = new Array(0,3,6); // Vermindert
+
+//---------------------------------------------------------------------------------------------------------
+		function generiereAlleTonleitern(){
+			for (var a = 0; a < 12;a++){
+				var SammelArray = new Array();
+				var aktuelleNote = a;
+				for (var b = 0; b < Schritte.length;b++ ){
+					aktuelleNote %= Noten.length;
+					SammelArray.push(Noten[aktuelleNote]);
+					aktuelleNote += Schritte[b];
+				}
+				AlleTonleitern.push(SammelArray);
+			
+			}
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function holeAkkord(notenNummer,Muster){
+		var returnString = '(';
+		var seperator = '';
+			for (var a = 0; a < Muster.length;a++){
+				var NotenNummer = Muster[a]+notenNummer;
+				NotenNummer %=  Noten.length;
+				returnString += seperator;
+				returnString += Noten[NotenNummer];
+				seperator = '-';
+			}
+		return returnString +')';
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function HTMLAkkord(notenNummer,Muster,AkkordTyp){
+		var returnString = "<td align='center' bgColor='"+AkkordFarben(notenNummer,AkkordTyp)+"'><font color='white'>";
+			returnString += holeAkkord(notenNummer,Muster)
+		return returnString +'</font></td>';
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function AkkordFarben(notenNummer,AkkordTyp){
+		var Farbe ;
+		notenNummer %=  Noten.length;
+		switch (AkkordTyp) {
+			case "DUR":
+				Farbe = rgbcolor(251,113,206,notenNummer);
+				break;
+			case "MOLL":
+				Farbe = rgbcolor(125,173,187,notenNummer);
+				break;
+			case "VERM":
+				Farbe = rgbcolor(255,204,115,notenNummer);
+				break;
+			default:
+				Farbe = rgbcolor(255,255,255,notenNummer);
+				break;
+		}
+		return Farbe;
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function rgbcolor(r,g,b,notenNummer){
+		var Max = 35.0;
+		r = (parseInt(r/Max)*(notenNummer + Max-11));
+		g = (parseInt(g/Max)*(notenNummer + Max-11));
+		b = (parseInt(b/Max)*(notenNummer + Max-11));
+		var s = "000000" + (((r * 0x100 + g)* 0x100)+b).toString(16);
+		return "#" + s.substr(s.length-6,6).toUpperCase();
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function plotNoten(){
+			document.write("<p>"); 
+			for (var counter = 0; counter < Noten.length;counter ++){
+				document.write(Noten[counter]);
+				if(counter < Noten.length-1 ){
+					document.write(" - "); 
+				}
+			}
+			document.write("</p>"); 
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function HTMLNote (NotenNummer, AktuelleOktave){
+			NotenNummer %=  Noten.length;
+			var HintergrundFarbe = "#ffffff";
+			var VordergrundFarbe = "#000000";
+			if (Noten[NotenNummer].match (/#/)){
+				HintergrundFarbe = "#898989";
+				VordergrundFarbe = "#ffffff";
+			}
+
+			// Notenerkennung v.0.5
+			var kandidat = false;
+			var SuchString = Noten[NotenNummer]+"$";
+			for (var a = 0; a < NotenMuster.length;a++){
+				if(NotenMuster[a].match(SuchString)){
+					kandidat =  true;
+				}
+			}
+			if (kandidat){
+				var hasMatched = false;
+				for (var a = 0; a < NotenMuster.length;a++){
+					SuchString = NotenMuster[a]+"$";
+					tempHasMatched = false;
+					for (var b = 0; b < AlleTonleitern[0].length;b++ ){
+						if (AlleTonleitern[AktuelleOktave][b].match(SuchString)){
+							tempHasMatched = true;
+						}
+					}
+					hasMatched = tempHasMatched;
+					if (!hasMatched){break;}
+				}
+				if(hasMatched){
+					HintergrundFarbe = "#ffc700";
+					VordergrundFarbe = "#000000";
+				}
+			}
+			return "<td align='center' bgcolor='"+HintergrundFarbe+"'><font color='"+VordergrundFarbe+"'>"+Noten[NotenNummer]+" </font></td>";
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function plotOktave(initNote){
+			var returnString = "<tr>";
+				returnString += HTMLNote (initNote,initNote); // Dur Tonart
+				returnString += HTMLNote (initNote + 9,initNote); // Moll Tonart
+				returnString += "<td bgcolor='#123312' width = '2px'></td>";
+			var laufNote = initNote;
+		
+			for (var counter = 0;counter <= Schritte.length;counter++){
+				laufNote %=  Noten.length;
+				returnString +=HTMLNote (laufNote,initNote);
+				laufNote += Schritte[counter]; 	
+			}
+				returnString += "<td bgcolor='#123312' width = '2px'></td>";
+			
+				returnString += HTMLAkkord(initNote+5,AkkordMuster[0],"DUR");
+				returnString += HTMLAkkord(initNote,AkkordMuster[0],"DUR");
+				returnString += HTMLAkkord(initNote+7,AkkordMuster[0],"DUR");
+			
+				returnString += HTMLAkkord(initNote+2,AkkordMuster[1],"MOLL");
+				returnString += HTMLAkkord(initNote+9,AkkordMuster[1],"MOLL");
+				returnString += HTMLAkkord(initNote+4,AkkordMuster[1],"MOLL");
+			
+				returnString += HTMLAkkord(initNote+11,AkkordMuster[2],"VERM");
+
+
+			return returnString + "</tr>";
+		}
+
+
+//---------------------------------------------------------------------------------------------------------
+
+		function init(){
+				generiereAlleTonleitern();
+				var returnString = "<table id='myTable' cellspacing='1' cellpadding ='3' border='0'bgcolor='#123312'>";
+				returnString += "<tr><th>Dur</th><th>Moll</th><th></th><th colspan='8'><i>Töne</i></th><th></th><th colspan='3'>Dur Akkorde</th><th colspan='3'>Moll Akkorde</th><th>vermindert</th></tr>";
+				for(var counter = 0; counter < 12; counter++){
+					returnString += plotOktave(counter);
+				}
+				returnString += "<tr><td></td><td>*</td><td colspan='10'></td><td align='center'><span class ='klein'>Subdominante</span></td><td align='center'><span class ='klein'>Tonika</span></td><td align='center'><span class ='klein'>Dominante</span></td><td align='center'><span class ='klein'>Subdominante*</span></td><td align='center'><span class ='klein'>Tonika*</span></td><td align='center'><span class ='klein'>Dominante*</span></td></tr>";
+				returnString += "</table>";
+				document.getElementById("wurst").innerHTML = returnString;
+		}
+//---------------------------------------------------------------------------------------------------------
+
+		function markiereNoten(){
+			NotenMuster = new Array();
+			var noteEins = 		document.getElementById("noteEins").value;
+			var noteZwei = 		document.getElementById("noteZwei").value;
+			var noteDrei = 		document.getElementById("noteDrei").value;
+			var noteVier = 		document.getElementById("noteVier").value;
+			var noteFuenf = 	document.getElementById("noteFuenf").value;
+			var noteSechs = 	document.getElementById("noteSechs").value;
+			var noteSieben = 	document.getElementById("noteSieben").value;
+			
+			if ( noteEins != '' ){
+				NotenMuster.push(noteEins);
+			}
+			if ( noteZwei != '' ){
+				NotenMuster.push(noteZwei);
+			}
+			if ( noteDrei != '' ){
+				NotenMuster.push(noteDrei);
+			}
+			if ( noteVier != '' ){
+				NotenMuster.push(noteVier);
+			}
+			if ( noteFuenf != '' ){
+				NotenMuster.push(noteFuenf);
+			}
+			if ( noteSechs != '' ){
+				NotenMuster.push(noteSechs);
+			}
+			if ( noteSieben != '' ){
+				NotenMuster.push(noteSieben);
+			}
+			init();
+		}
+
+</script>
+</head>
+<body>
+	<div class ="mycenter">
+		<div class ="myText">
+			<h3>Kompositionshilfe für:</h3>
+			<script type="text/javascript">  
+				plotNoten();
+
+			</script>  
+			<form>
+				<table>
+					<tr>
+						<td>match: </td>
+						<td><input type ="text" id="noteEins" 	size="2" onchange="markiereNoten()"></td>
+						<td><input type ="text" id="noteZwei" 	size="2" onchange="markiereNoten()"></td>
+						<td><input type ="text" id="noteDrei" 	size="2" onchange="markiereNoten()"></td>
+						<td><input type ="text" id="noteVier" 	size="2" onchange="markiereNoten()"></td>
+						<td><input type ="text" id="noteFuenf" 	size="2" onchange="markiereNoten()"></td>
+						<td><input type ="text" id="noteSechs" 	size="2" onchange="markiereNoten()"></td>
+						<td><input type ="text" id="noteSieben" size="2" onchange="markiereNoten()"></td>
+						<td><input type ="button" value="und ab dafür!" onchange="markiereNoten()"></td>
+					</tr>
+				</table>
+			</form>
+			<div ID="wurst"> </div>
+			<script type="text/javascript">  
+			init();
+			</script>
+		</div>
+	</div>
+</body>
+</html>
